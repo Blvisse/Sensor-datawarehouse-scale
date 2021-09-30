@@ -1,58 +1,6 @@
-# '''
-# This script migrates data from the sql to postgres database
-
-# '''
-
-# import pandas as pd
-# import pyodbc
-# import os
-# import re
-# from sqlalchemy import create_engine
-
-# database_name = 'sensor_datawarehouse'
-# mssqlserver_servername = 'localhost'
-
-# mssqlserver_uri = f"mssql+pyodbc://root:root@{mssqlserver_servername}/{database_name}?driver=SQL+Server"
-# mssqlserver_engine = create_engine(mssqlserver_uri)
-
-# print(mssqlserver_engine)
-
-# postgres_uri = f"postgres+psycopg2://postgres:root@localhost:5432/{database_name}"
-# postgres_engine = create_engine(postgres_uri)
-
-# print(postgres_engine)
-
-# mssqlserver_table_query = """
-
-#     SELECT
-#           t.name AS table_name
-#         , s.name AS schema_name
-#     FROM sys.tables t
-#     INNER JOIN sys.schemas s
-#     ON t.schema_id = s.schema_id
-
-#     UNION
-
-#     SELECT
-#           v.name AS table_name
-#         , s.name AS schema_name
-#     FROM sys.views v
-#     INNER JOIN sys.schemas s
-#     ON v.schema_id = s.schema_id
-
-#     ORDER BY schema_name, table_name;
-
-# """
-
-# mssqlserver_connection = mssqlserver_engine.connect()
-
-# mssqlserver_tables = mssqlserver_connection.execute(mssqlserver_table_query)
-# mssqlserver_tables = mssqlserver_tables.fetchall()
-# mssqlserver_tables = dict(mssqlserver_tables)
-
-# mssqlserver_schemas = set(mssqlserver_tables.values())
-
-# mssqlserver_connection.close()
+'''
+This script migrates data from the sql to postgres database
+'''
 
 import os
 import sys
@@ -107,7 +55,7 @@ for i in tq(range(10), desc="Migrating to postgres"):
             post_cursor.execute(
                 '''
 
-                INSERT INTO sensor_data.migration_test (ID,flow_99,flow_max,flow_median,flow_total,n_obs)
+                INSERT INTO sensor_data.station_summary (ID,flow_99,flow_max,flow_median,flow_total,n_obs)
                 VALUES(%(ID)s,%(flow_99)s,%(flow_max)s,%(flow_median)s,%(flow_total)s,%(n_obs)s);
                 
                 
@@ -118,3 +66,61 @@ for i in tq(range(10), desc="Migrating to postgres"):
 print("Done..")
 
 ##### we now migrate the rest of the tables
+mysql_cursor.execute("SELECT * FROM i80_stations")
+print("Migrating stations table to postgres database....")
+for i in tq(range(10), desc="Migrating to postgres"):
+    for row in mysql_cursor:
+        try:
+            post_cursor.execute(
+                '''
+                INSERT INTO sensor_data."I80_stations"(ID,fwy,dir,district,county,city,state_pm,abs_pm,latitude,longitude,length,type,lanes,name,user_id_1,user_id_2,user_id_3,user_id_4)
+                VALUES (%(ID)s,%(fwy)s,%(dir)s,%(district)s,%(district)s,%(city)s,%(state_pm)s,%(abs_pm)s,%(latitude)s,%(longitude)s,%(length)s,%(type)s,%(lanes)s,%(name)s,%(user_id_1)s,%(user_id_2)s,%(user_id_3)s,%(user_id_4)s);
+
+                ''', row)
+
+        except Exception as e:
+            print(e)
+
+mysql_cursor.execute("SELECT * FROM i80_median")
+print("querying median table in sql")
+
+print("Migrating median table to postgres database...")
+for i in tq(range(10), desc="Migrating to postgres"):
+    for row in mysql_cursor:
+
+        try:
+
+            post_cursor.execute(
+                '''
+
+                INSERT INTO sensor_data.tests (ID,weekday,hour,minute,second,flow1,occupancy1,mph1,flow2,occupancy2,mph2,flow3,occupancy3,mph3,flow4,occupancy4,mph4,flow5,occupancy5,mp5,totalflow)
+                VALUES(%(ID)s,%(weekday)s,%(hour)s,%(minute)s,%(second)s,%(flow1)s,%(occupancy1)s,%(mph1)s,%(flow2)s,%(occupancy2)s,%(mph2)s,%(flow3)s,%(occupancy3)s,%(mph3)s,%(flow4)s,%(occupancy4)s,%(mph4)s,%(flow5)s,%(occupancy5)s,%(mp5)s,%(totalflow)s);
+                
+                
+            ''', row)
+        except Exception as e:
+            print(e)
+
+print("Done..")
+
+#migrating the richards table to postgres database...
+mysql_cursor.execute("SELECT * FROM richards")
+print("querying richards table in sql")
+
+print("Migrating richards table to postgres database...")
+for i in tq(range(10), desc="Migrating to postgres"):
+    for row in mysql_cursor:
+        try:
+
+            post_cursor.execute(
+                '''
+
+                INSERT INTO sensor_data.richards (timestamp,flow1,occupancy1,flow2,occupancy2,flow3,occupancy3,totalflow,weekday,hour,minute,second)
+                VALUES(%(timesamp)s,%(flow1)s,%(occupancy1)s,%(flow2)s,%(occupancy2)s,%(flow3)s,%(occupancy3)s,%(totalflow)s,%(weekday)s,%(hour)s,%(minute)s,%(second)s);
+                
+                
+            ''', row)
+        except Exception as e:
+            print(e)
+
+print("Done..")

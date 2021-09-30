@@ -32,7 +32,7 @@ The project is dockerrized and can be launched by running
 
 The services have been assigned different port for accessing to access
 
-dbt: `` localhost:8080 ```
+dbt: ``` localhost:8080 ```
 
 airflow: ``` loclhost:8001 ```
 

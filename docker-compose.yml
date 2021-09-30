@@ -21,3 +21,15 @@ services:
       - db
     links:
       - "db:database"
+  
+  
+  superset:
+    container_name: superset
+    build:
+      context: ./superset
+      dockerfile: Dockerfile
+       ports:
+      - 8083:8000
+      depneds_on:
+         - db
+      
